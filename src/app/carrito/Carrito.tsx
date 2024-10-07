@@ -1,43 +1,46 @@
-"use client"; // Asegúrate de que este componente sea interactivo en Next.js
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import DetallesPago from "./DetallesPago"; // Asegúrate de que la ruta sea correcta
+import DetallesPago from "./DetallesPago";
+import { PuffLoader } from "react-spinners";
 
 const Carrito: React.FC = () => {
   const [carrito, setCarrito] = useState<any[]>([]);
-  const [cupon, setCupon] = useState<string>(""); // Estado para el cupón
-  const [isMounted, setIsMounted] = useState(false); 
-  const [mostrarPago, setMostrarPago] = useState(false); // Controla si se muestra el formulario de pago
-  const [descuento, setDescuento] = useState<number>(0); // Estado para el descuento del cupón
+  const [cupon, setCupon] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [mostrarPago, setMostrarPago] = useState(false);
+  const [descuento, setDescuento] = useState<number>(0);
 
-  // Función para cargar el carrito desde la API
+  // Función para cargar el carrito desde la API con ID dinámico de usuario
   const obtenerCarrito = async () => {
     try {
-      const response = await fetch("/api/carrito?id_usuario=1");
+      const id_usuario = localStorage.getItem("id_usuario"); // Obtener el ID del usuario del localStorage
+      if (!id_usuario) {
+        throw new Error("Usuario no autenticado");
+      }
+
+      const response = await fetch(`/api/carrito?id_usuario=${id_usuario}`);
       if (response.ok) {
         const data = await response.json();
         setCarrito(data || []);
       }
     } catch (error) {
       console.error("Error al obtener el carrito:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    setIsMounted(true);
     obtenerCarrito();
   }, []);
-
-  if (!isMounted) {
-    return null; 
-  }
 
   // Función para calcular el total del carrito
   const calcularTotalCarrito = () => {
     return carrito
       .reduce((total, item) => {
-        const precio = parseFloat(item.precio_unitario || "0");
+        const precio = parseFloat(item.precio_unidad || "0"); // Usar precio_unidad en lugar de precio_unitario
         const cantidad = item.cantidad || 0;
         return total + precio * cantidad;
       }, 0)
@@ -48,10 +51,8 @@ const Carrito: React.FC = () => {
   const aplicarCupon = () => {
     if (cupon === "DESCUENTO10") {
       setDescuento(0.10); // Aplica un 10% de descuento si el cupón es válido
-      console.log("Cupón aplicado: 10% de descuento");
     } else {
       setDescuento(0); // No aplica descuento si el cupón es inválido
-      console.log("Cupón inválido");
     }
   };
 
@@ -66,13 +67,24 @@ const Carrito: React.FC = () => {
     setMostrarPago(true); // Cambiar estado para mostrar el formulario de pago
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <PuffLoader color="#36D7B7" size={100} />
+      </div>
+    );
+  }
+
   if (mostrarPago) {
     // Mostrar el formulario de pago en lugar del carrito
     return (
       <DetallesPago
         onConfirmarPago={confirmarPago}
         productos={carrito}
-        total={parseFloat(calcularTotalCarrito()) - (parseFloat(calcularTotalCarrito()) * descuento)} // Aplicar descuento
+        total={
+          parseFloat(calcularTotalCarrito()) -
+          parseFloat(calcularTotalCarrito()) * descuento
+        }
       />
     );
   }
@@ -111,16 +123,21 @@ const Carrito: React.FC = () => {
 
                   <div className="flex items-center mt-2 sm:mt-0">
                     <span className="text-lg font-semibold">
-                      S/.{item.precio_unitario}
+                      S/.{item.precio_unidad} {/* Usar precio_unidad */}
                     </span>
                     <span className="text-lg font-semibold ml-4">
-                      S/.{(parseFloat(item.precio_unitario) * item.cantidad).toFixed(2)}
+                      S/.
+                      {(
+                        parseFloat(item.precio_unidad) * item.cantidad // Usar precio_unidad
+                      ).toFixed(2)}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500">El carrito está vacío.</p>
+              <p className="text-center text-gray-500">
+                El carrito está vacío.
+              </p>
             )}
           </div>
 
@@ -145,21 +162,32 @@ const Carrito: React.FC = () => {
           <h3 className="text-xl font-bold mb-4">Totales del Carrito</h3>
           <div className="flex justify-between py-2">
             <span className="text-lg">Subtotal:</span>
-            <span className="text-lg font-semibold">S/.{calcularTotalCarrito()}</span>
+            <span className="text-lg font-semibold">
+              S/.{calcularTotalCarrito()}
+            </span>
           </div>
 
           {/* Aplicar descuento si el cupón es válido */}
           {descuento > 0 && (
             <div className="flex justify-between py-2">
               <span className="text-lg">Descuento (10%):</span>
-              <span className="text-lg font-semibold">-S/.{(parseFloat(calcularTotalCarrito()) * descuento).toFixed(2)}</span>
+              <span className="text-lg font-semibold">
+                -S/.
+                {(
+                  parseFloat(calcularTotalCarrito()) * descuento
+                ).toFixed(2)}
+              </span>
             </div>
           )}
 
           <div className="flex justify-between py-2">
             <span className="text-lg">Total:</span>
             <span className="text-lg font-semibold">
-              S/.{(parseFloat(calcularTotalCarrito()) - (parseFloat(calcularTotalCarrito()) * descuento)).toFixed(2)}
+              S/.
+              {(
+                parseFloat(calcularTotalCarrito()) -
+                parseFloat(calcularTotalCarrito()) * descuento
+              ).toFixed(2)}
             </span>
           </div>
 

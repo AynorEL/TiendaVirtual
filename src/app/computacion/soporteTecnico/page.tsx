@@ -5,18 +5,52 @@ import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import { CodeBracketIcon, ServerIcon, DevicePhoneMobileIcon, ArrowPathIcon, PuzzlePieceIcon, BeakerIcon, PhoneIcon, EnvelopeIcon, WrenchIcon, CogIcon, MapPinIcon } from '@heroicons/react/24/outline';
+
+import {
+  CodeBracketIcon,
+  ServerIcon,
+  DevicePhoneMobileIcon,
+  ArrowPathIcon,
+  PuzzlePieceIcon,
+  BeakerIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  WrenchIcon,
+  CogIcon,
+  MapPinIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
+  XMarkIcon,
+  CpuChipIcon, // Ícono relacionado a computación e informática
+} from '@heroicons/react/24/outline';
 import '../../globals.css';
 
-import { SiReact, SiAngular, SiVuedotjs, SiNodedotjs, SiPython, SiDotnet, SiMysql, SiMongodb, SiDocker, SiKubernetes } from "react-icons/si";
+import {
+  SiReact,
+  SiAngular,
+  SiVuedotjs,
+  SiNodedotjs,
+  SiPython,
+  SiDotnet,
+  SiMysql,
+  SiMongodb,
+  SiDocker,
+  SiKubernetes,
+} from "react-icons/si";
 import Link from 'next/link';
-import Navbar from './../componentes/navbar'; // Asegúrate de que la ruta sea la correcta
+import Navbar from './../componentes/navbar';
 import { useState } from 'react';
 
 const Page = () => {
   // Estados para controlar la visibilidad de los modales
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState(false);
+
+  // Estados para el chatbot
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { sender: 'bot', text: '¡Bienvenido a TechBot! 💻 ¿En qué puedo ayudarte hoy?' },
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
 
   // Funciones para abrir y cerrar los modales
   const openContactModal = () => {
@@ -35,11 +69,27 @@ const Page = () => {
     setIsSubscribeModalOpen(false);
   };
 
+  // Función para manejar el envío de mensajes en el chatbot
+  const sendMessage = () => {
+    if (inputMessage.trim() !== '') {
+      setMessages([...messages, { sender: 'user', text: inputMessage }]);
+      setInputMessage('');
+
+      // Respuesta automática (puedes reemplazarla con lógica real)
+      setTimeout(() => {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { sender: 'bot', text: 'Gracias por tu mensaje. Pronto te responderemos.' },
+        ]);
+      }, 1000);
+    }
+  };
+
   return (
     <>
       {/* Barra de navegación */}
-      
       <Navbar onOpenContactModal={openContactModal} />
+
       {/* Modal para enviar mensaje (Contáctenos) */}
       {isContactModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
@@ -603,6 +653,74 @@ salesforce.syncClients(erpSystem.clients);`}
           </div>
         </div>
       </footer>
+        {/* Botón del Chatbot */}
+        <button
+        onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+        className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out z-50"
+      >
+        {/* Ícono temático de Computación e Informática */}
+        <CpuChipIcon className="w-6 h-6" />
+      </button>
+      {isChatbotOpen && (
+        <div className="fixed bottom-20 right-6 z-50">
+          <div className="w-72 bg-white shadow-md rounded-lg overflow-hidden">
+            <div className="flex flex-col h-96">
+              {/* Encabezado del modal */}
+              <div className="px-4 py-3 bg-blue-800 text-white flex justify-between items-center">
+                <h2 className="text-lg font-semibold">TechBot</h2>
+                <button
+                  onClick={() => setIsChatbotOpen(false)}
+                  className="hover:text-red-200 text-xl font-bold"
+                >
+                  &times;
+                </button>
+              </div>
+              {/* Contenido del modal */}
+              <div className="flex-1 p-3 overflow-y-auto">
+                {messages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`mb-2 flex ${
+                      msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`${
+                        msg.sender === 'user'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-800'
+                      } rounded-lg px-3 py-2 max-w-xs`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Input para escribir mensajes */}
+              <div className="px-3 py-2 border-t">
+                <div className="flex gap-2">
+                  <input
+                    placeholder="Escribe tu mensaje..."
+                    className="flex-1 p-2 border rounded-lg text-sm"
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') sendMessage();
+                    }}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg transition duration-300 ease-in-out text-sm"
+                  >
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

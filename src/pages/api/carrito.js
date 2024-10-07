@@ -2,7 +2,13 @@ const { sequelize } = require('../../db');
 const { QueryTypes } = require('sequelize');
 
 export default async function handler(req, res) {
-  const id_usuario = 1;  // Id de usuario fijo temporalmente
+  // Obtener el ID del usuario desde el cuerpo de la solicitud (POST) o los parámetros (GET)
+  const id_usuario = req.body?.id_usuario || req.query?.id_usuario;
+
+  // Verificar si el ID de usuario está presente
+  if (!id_usuario) {
+    return res.status(400).json({ success: false, message: 'El ID de usuario es requerido.' });
+  }
 
   if (req.method === 'POST') {
     const { id_producto, cantidad } = req.body;
@@ -53,9 +59,9 @@ export default async function handler(req, res) {
           }
         );
       } else {
-        // Insertar el nuevo producto en el carrito
+        // Insertar el nuevo producto en el carrito, usando la columna precio_unidad
         await sequelize.query(
-          'INSERT INTO detalles_carrito (id_carrito, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, (SELECT precio FROM productos WHERE id_producto = ?))',
+          'INSERT INTO detalles_carrito (id_carrito, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, (SELECT precio_unidad FROM productos WHERE id_producto = ?))',
           {
             replacements: [carrito.id_carrito, id_producto, cantidad, id_producto],
             type: QueryTypes.INSERT,
@@ -69,23 +75,14 @@ export default async function handler(req, res) {
       res.status(500).json({ success: false, message: 'Error en el servidor' });
     }
   } else if (req.method === 'GET') {
-    const { id_usuario } = req.query;
-
-    if (!id_usuario) {
-      return res.status(400).json({ success: false, message: 'El ID de usuario es requerido.' });
-    }
-
     try {
       // Obtener los productos en el carrito pendiente del usuario
       const productosCarrito = await sequelize.query(
-        `
- SELECT p.id_producto, p.nombre_producto, p.descripcion, p.imagen, p.precio_unidad, dc.cantidad, dc.precio_unitario 
-      FROM detalles_carrito dc 
-      JOIN productos p ON dc.id_producto = p.id_producto
-      JOIN carrito_compras cc ON dc.id_carrito = cc.id_carrito
-      WHERE cc.id_usuario = ? AND cc.estado = "pendiente"
-    
-        `,
+        `SELECT p.id_producto, p.nombre_producto, p.descripcion, p.imagen, p.precio_unidad, dc.cantidad, dc.precio_unitario 
+         FROM detalles_carrito dc 
+         JOIN productos p ON dc.id_producto = p.id_producto
+         JOIN carrito_compras cc ON dc.id_carrito = cc.id_carrito
+         WHERE cc.id_usuario = ? AND cc.estado = "pendiente"`,
         {
           replacements: [id_usuario],
           type: QueryTypes.SELECT,
@@ -98,9 +95,9 @@ export default async function handler(req, res) {
       res.status(500).json({ success: false, message: 'Error en el servidor' });
     }
   } else if (req.method === 'DELETE') {
-    const { id_producto, id_usuario } = req.body;
+    const { id_producto } = req.body;
 
-    if (!id_producto || !id_usuario) {
+    if (!id_producto) {
       return res.status(400).json({ success: false, message: 'Faltan parámetros requeridos.' });
     }
 
@@ -119,5 +116,7 @@ export default async function handler(req, res) {
       console.error('Error al eliminar producto del carrito:', error.message);
       res.status(500).json({ success: false, message: 'Error en el servidor' });
     }
+  } else {
+    res.status(405).json({ success: false, message: 'Método no permitido' });
   }
 }

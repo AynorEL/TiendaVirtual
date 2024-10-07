@@ -1,3 +1,7 @@
+// src/app/carrito/DetallesPago.tsx
+
+"use client";
+
 import React, { useState, useEffect } from "react";
 import {
   FaCcVisa,
@@ -5,6 +9,8 @@ import {
   FaCcAmex,
   FaCcDinersClub,
 } from "react-icons/fa";
+import { HashLoader } from "react-spinners";
+import Image from "next/image";
 
 // Definición de la interfaz para los productos
 interface Producto {
@@ -40,12 +46,16 @@ const DetallesPago: React.FC<DetallesPagoProps> = ({
     tarjeta: "",
     expiracion: "",
     cvv: "",
+    comprobantePago: null as File | null, // Estado para el archivo de comprobante de pago
   });
 
   // Estados para almacenar las provincias y los distritos filtrados
   const [provincias, setProvincias] = useState<any[]>([]);
   const [distritos, setDistritos] = useState<any[]>([]);
   const [tipoTarjeta, setTipoTarjeta] = useState<string>("");
+
+  // Estado para mostrar el loader
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Efecto para cargar las provincias al montar el componente
   useEffect(() => {
@@ -88,6 +98,16 @@ const DetallesPago: React.FC<DetallesPagoProps> = ({
     }
   };
 
+  // Función para manejar la carga del comprobante de pago
+  const manejarArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormulario({
+        ...formulario,
+        comprobantePago: e.target.files[0],
+      });
+    }
+  };
+
   // Función para detectar el tipo de tarjeta de crédito
   const detectarTipoTarjeta = (numeroTarjeta: string) => {
     const visaRegex = /^4/;
@@ -109,10 +129,27 @@ const DetallesPago: React.FC<DetallesPagoProps> = ({
   };
 
   // Función para manejar la confirmación del pago
-  const manejarConfirmacion = (e: React.FormEvent) => {
+  const manejarConfirmacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirmarPago();
+    setIsProcessingPayment(true); // Mostrar el loader
+
+    // Aquí puedes agregar validaciones adicionales antes de confirmar el pago
+    // y enviar la información al backend para procesarla
+
+    // Simular procesamiento de pago
+    setTimeout(() => {
+      setIsProcessingPayment(false); // Ocultar el loader
+      onConfirmarPago();
+    }, 3000); // Simulamos un retraso de 3 segundos
   };
+
+  if (isProcessingPayment) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <HashLoader color="#36D7B7" size={80} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8">
@@ -255,7 +292,6 @@ const DetallesPago: React.FC<DetallesPagoProps> = ({
                 className="border border-gray-300 rounded-lg p-3 w-full"
               >
                 <option value="tarjeta">Tarjeta de Crédito/Débito</option>
-                <option value="paypal">PayPal</option>
                 <option value="yape">Yape</option>
                 <option value="plin">Plin</option>
               </select>
@@ -302,6 +338,42 @@ const DetallesPago: React.FC<DetallesPagoProps> = ({
                   required
                   className="border border-gray-300 rounded-lg p-3 w-full"
                 />
+              </div>
+            )}
+
+            {(formulario.metodoPago === "yape" ||
+              formulario.metodoPago === "plin") && (
+              <div className="mt-6">
+                <p className="text-gray-700">
+                  Por favor, realiza el pago mediante{" "}
+                  {formulario.metodoPago === "yape" ? "Yape" : "Plin"} escaneando
+                  el siguiente código QR:
+                </p>
+                <div className="flex justify-center my-4">
+                  <Image
+                    src="/images/qr.jpg"
+                    alt="Código QR"
+                    width={200}
+                    height={200}
+                  />
+                </div>
+                <p className="text-gray-700">
+                  O puedes enviar el pago al número: <strong>925033437</strong>
+                </p>
+
+                {/* Subir comprobante de pago */}
+                <div className="mt-4">
+                  <label className="block text-gray-700 font-bold mb-2">
+                    Sube el comprobante de pago*
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={manejarArchivo}
+                    required
+                    className="border border-gray-300 rounded-lg p-3 w-full"
+                  />
+                </div>
               </div>
             )}
 
